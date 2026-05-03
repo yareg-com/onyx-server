@@ -5,3 +5,4 @@ pub mod members;
 pub mod media;
 pub mod avatars;
 pub mod groups;
+pub mod voice;

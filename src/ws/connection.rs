@@ -77,6 +77,20 @@ async fn handle_socket(socket: WebSocket, username: String, db: Db, hub: Hub) {
         _ = send_task => {},
         _ = recv_task => {},
     }
+
+    // Auto-leave all voice channels on disconnect and notify all subscribers.
+    let affected = hub.voice_leave_all(&username).await;
+    for channel_id in &affected {
+        let packet = json!({
+            "type": "voice_user_left",
+            "channel_id": channel_id,
+            "username": &username,
+        });
+        hub.broadcast_to_subscribed(&packet).await;
+    }
+    if !affected.is_empty() {
+        info!("[ws] {} disconnected, left {} voice channel(s)", username, affected.len());
+    }
 }
 
 async fn handle_client_message(
@@ -145,6 +159,65 @@ async fn handle_client_message(
                 "is_online": state != "offline",
             });
             hub.broadcast_to_all(db, &packet).await;
+        }
+
+        // ── Voice channel signaling ──────────────────────────────────────────
+
+        ClientMessage::VoiceJoin { channel_id } => {
+            let users = hub.voice_join(&channel_id, username).await;
+            // Send current channel state to the joining user
+            let _ = tx.send(json!({
+                "type": "voice_channel_state",
+                "channel_id": &channel_id,
+                "users": &users,
+            }).to_string());
+            // Broadcast presence update to all subscribed users so every open
+            // voice popup sees the new channel immediately.
+            let packet = json!({
+                "type": "voice_user_joined",
+                "channel_id": &channel_id,
+                "username": username,
+            });
+            hub.broadcast_to_subscribed(&packet).await;
+            info!("[voice] {} joined channel '{}'", username, channel_id);
+        }
+
+        ClientMessage::VoiceLeave { channel_id } => {
+            hub.voice_leave(&channel_id, username).await;
+            let packet = json!({
+                "type": "voice_user_left",
+                "channel_id": &channel_id,
+                "username": username,
+            });
+            hub.broadcast_to_subscribed(&packet).await;
+            info!("[voice] {} left channel '{}'", username, channel_id);
+        }
+
+        ClientMessage::VoiceOffer { channel_id, target, sdp } => {
+            hub.send_to_user(&target, &json!({
+                "type": "voice_offer",
+                "channel_id": &channel_id,
+                "from": username,
+                "sdp": &sdp,
+            })).await;
+        }
+
+        ClientMessage::VoiceAnswer { channel_id, target, sdp } => {
+            hub.send_to_user(&target, &json!({
+                "type": "voice_answer",
+                "channel_id": &channel_id,
+                "from": username,
+                "sdp": &sdp,
+            })).await;
+        }
+
+        ClientMessage::VoiceIce { channel_id, target, candidate } => {
+            hub.send_to_user(&target, &json!({
+                "type": "voice_ice",
+                "channel_id": &channel_id,
+                "from": username,
+                "candidate": &candidate,
+            })).await;
         }
     }
 }

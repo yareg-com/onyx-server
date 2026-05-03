@@ -59,6 +59,7 @@ pub async fn get_info(
     }
 
     if let Some((group_name, description, _invite_token, _avatar_version, is_channel, public_token)) = group_info {
+        let vc = &state.config.voice;
         let mut response = json!({
             "ok": true,
             "name": state.config.server.name,
@@ -75,6 +76,14 @@ pub async fn get_info(
             "group_name": group_name,
             "group_description": description,
             "is_channel": is_channel,
+            "voice_config": {
+                "quality": vc.quality,
+                "max_bitrate_bps": vc.effective_bitrate_bps(),
+                "noise_suppression": vc.noise_suppression,
+                "echo_cancellation": vc.echo_cancellation,
+                "auto_gain_control": vc.auto_gain_control,
+                "stereo": vc.stereo,
+            },
         });
 
         // Add public_channel_token if available (for public channels)

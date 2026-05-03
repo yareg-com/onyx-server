@@ -13,6 +13,8 @@ pub struct Config {
     pub moderation: ModerationConfig,
     #[serde(default)]
     pub security: SecurityConfig,
+    #[serde(default)]
+    pub voice: VoiceConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,6 +98,59 @@ pub struct SecurityConfig {
     #[serde(default)]
     pub allowed_origins: Vec<String>,
 }
+
+// ── Voice quality config ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoiceConfig {
+    /// Quality preset: "low" (32 kbps), "medium" (64 kbps), "high" (96 kbps), "ultra" (128 kbps)
+    #[serde(default = "default_voice_quality")]
+    pub quality: String,
+    /// Override bitrate directly (bits/s). Takes priority over `quality`.
+    #[serde(default)]
+    pub max_bitrate_bps: Option<u32>,
+    #[serde(default = "default_true")]
+    pub noise_suppression: bool,
+    #[serde(default = "default_true")]
+    pub echo_cancellation: bool,
+    #[serde(default = "default_true")]
+    pub auto_gain_control: bool,
+    /// Enable stereo audio (doubles bandwidth usage).
+    #[serde(default)]
+    pub stereo: bool,
+}
+
+impl VoiceConfig {
+    /// Effective Opus bitrate in bits per second.
+    pub fn effective_bitrate_bps(&self) -> u32 {
+        if let Some(bps) = self.max_bitrate_bps {
+            return bps;
+        }
+        match self.quality.as_str() {
+            "low"   => 32_000,
+            "high"  => 96_000,
+            "ultra" => 128_000,
+            _       => 64_000, // "medium" — Discord default
+        }
+    }
+}
+
+impl Default for VoiceConfig {
+    fn default() -> Self {
+        Self {
+            quality: default_voice_quality(),
+            max_bitrate_bps: None,
+            noise_suppression: true,
+            echo_cancellation: true,
+            auto_gain_control: true,
+            stereo: false,
+        }
+    }
+}
+
+fn default_voice_quality() -> String { "ultra".into() }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 fn default_name() -> String { "My ONYX Server".into() }
 fn default_bind() -> String { "0.0.0.0".into() }
@@ -216,6 +271,18 @@ require_approval = false
 # Restrict CORS to specific origins, e.g. ["https://app.example.com"]
 # Leave empty to allow any origin (suitable for LAN/desktop-app deployments)
 allowed_origins = []
+
+[voice]
+# Audio quality preset: "low" (32 kbps), "medium" (64 kbps), "high" (96 kbps), "ultra" (128 kbps)
+# "medium" matches Discord's default channel quality.
+quality = "medium"
+# Uncomment to set an exact bitrate in bits/s (overrides quality preset):
+# max_bitrate_bps = 64000
+noise_suppression = true
+echo_cancellation = true
+auto_gain_control = true
+# Enable stereo (doubles bandwidth; useful for music bots)
+stereo = false
 "#.to_string()
     }
 

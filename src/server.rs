@@ -12,7 +12,7 @@ use tracing::info;
 use crate::auth::{self, NonceStore};
 use crate::config::Config;
 use crate::db::Db;
-use crate::handlers::{auth_handlers, avatars, groups, info, media, members, messages};
+use crate::handlers::{auth_handlers, avatars, groups, info, media, members, messages, voice};
 use crate::rate_limit::{RateLimiter, SharedRateLimiter};
 use crate::ws::connection::{ws_upgrade, ws_public_upgrade};
 use crate::ws::hub::Hub;
@@ -143,6 +143,7 @@ fn build_router(state: AppState, max_body_bytes: usize) -> Router {
 
     // Authenticated routes
     let auth_routes = Router::new()
+        .route("/voice-channels", get(voice::get_voice_channels))
         // Group listing (client expects GET /groups returning array)
         .route("/groups", get(info::get_groups))
         // Group-prefixed routes (client uses these)

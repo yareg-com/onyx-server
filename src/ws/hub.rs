@@ -15,6 +15,8 @@ pub struct Hub {
 struct HubInner {
     connections: HashMap<String, Vec<Tx>>,
     subscribed: HashSet<String>,
+    /// channel_id -> ordered list of usernames currently in the channel
+    voice_channels: HashMap<String, Vec<String>>,
 }
 
 impl Hub {
@@ -23,6 +25,7 @@ impl Hub {
             inner: Arc::new(Mutex::new(HubInner {
                 connections: HashMap::new(),
                 subscribed: HashSet::new(),
+                voice_channels: HashMap::new(),
             })),
         }
     }
@@ -121,6 +124,75 @@ impl Hub {
         let inner = self.inner.lock().await;
 
         for username in &inner.subscribed {
+            if let Some(senders) = inner.connections.get(username) {
+                for tx in senders {
+                    let _ = tx.send(text.clone());
+                }
+            }
+        }
+    }
+
+    // ── Voice channel methods ────────────────────────────────────────────────
+
+    /// Add user to a voice channel. Returns the full user list after joining.
+    pub async fn voice_join(&self, channel_id: &str, username: &str) -> Vec<String> {
+        let mut inner = self.inner.lock().await;
+        let users = inner.voice_channels.entry(channel_id.to_string()).or_default();
+        if !users.iter().any(|u| u == username) {
+            users.push(username.to_string());
+        }
+        users.clone()
+    }
+
+    /// Remove user from a voice channel. Returns true if user was in that channel.
+    pub async fn voice_leave(&self, channel_id: &str, username: &str) -> bool {
+        let mut inner = self.inner.lock().await;
+        let (was_present, now_empty) = if let Some(users) = inner.voice_channels.get_mut(channel_id) {
+            let before = users.len();
+            users.retain(|u| u != username);
+            (users.len() < before, users.is_empty())
+        } else {
+            return false;
+        };
+        if now_empty {
+            inner.voice_channels.remove(channel_id);
+        }
+        was_present
+    }
+
+    /// Remove user from all voice channels on disconnect.
+    /// Returns list of channel IDs they were in.
+    pub async fn voice_leave_all(&self, username: &str) -> Vec<String> {
+        let mut inner = self.inner.lock().await;
+        let mut affected = Vec::new();
+        for (channel_id, users) in inner.voice_channels.iter_mut() {
+            if users.iter().any(|u| u == username) {
+                users.retain(|u| u != username);
+                affected.push(channel_id.clone());
+            }
+        }
+        inner.voice_channels.retain(|_, users| !users.is_empty());
+        affected
+    }
+
+    /// Snapshot of all active voice channels and their user lists.
+    pub async fn get_voice_channels(&self) -> HashMap<String, Vec<String>> {
+        let inner = self.inner.lock().await;
+        inner.voice_channels.clone()
+    }
+
+    /// Send a message to all users in a voice channel, optionally excluding one.
+    pub async fn broadcast_to_voice_channel(&self, channel_id: &str, message: &Value, exclude: Option<&str>) {
+        let text = message.to_string();
+        let inner = self.inner.lock().await;
+        let users = match inner.voice_channels.get(channel_id) {
+            Some(u) => u.clone(),
+            None => return,
+        };
+        for username in &users {
+            if Some(username.as_str()) == exclude {
+                continue;
+            }
             if let Some(senders) = inner.connections.get(username) {
                 for tx in senders {
                     let _ = tx.send(text.clone());
