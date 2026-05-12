@@ -607,7 +607,7 @@ fn open_db_or_exit(path: &str) -> db::Db {
 
 fn print_footer() {
     println!("\n{:>78}", "© 2026 WARDCORE");
-    println!("{:>78}", "beta 0.5");
+    println!("{:>78}", "beta 0.6");
     println!();
 }
 

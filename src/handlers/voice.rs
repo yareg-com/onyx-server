@@ -7,6 +7,9 @@ use crate::server::AppState;
 /// GET /voice-channels
 /// Returns a snapshot of all active voice channels and their participants.
 pub async fn get_voice_channels(State(state): State<AppState>) -> Json<Value> {
+    if !state.config.voice.enabled {
+        return Json(json!([]));
+    }
     let channels = state.hub.get_voice_channels().await;
     let result: Vec<Value> = channels
         .into_iter()

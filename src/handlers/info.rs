@@ -54,7 +54,7 @@ pub async fn get_info(
     if state.config.media.allowed_types.iter().any(|t| t == "video") {
         features.push("video");
     }
-    if state.config.media.allowed_types.iter().any(|t| t == "audio") {
+    if state.config.voice.enabled {
         features.push("voice");
     }
 

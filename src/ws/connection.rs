@@ -29,10 +29,11 @@ pub async fn ws_upgrade(
 
     let db = state.db.clone();
     let hub = state.hub.clone();
-    Ok(ws.on_upgrade(move |socket| handle_socket(socket, username, db, hub)))
+    let voice_enabled = state.config.voice.enabled;
+    Ok(ws.on_upgrade(move |socket| handle_socket(socket, username, db, hub, voice_enabled)))
 }
 
-async fn handle_socket(socket: WebSocket, username: String, db: Db, hub: Hub) {
+async fn handle_socket(socket: WebSocket, username: String, db: Db, hub: Hub, voice_enabled: bool) {
     let (mut ws_sink, mut ws_stream) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
 
@@ -63,7 +64,7 @@ async fn handle_socket(socket: WebSocket, username: String, db: Db, hub: Hub) {
         while let Some(Ok(msg)) = ws_stream.next().await {
             match msg {
                 Message::Text(text) => {
-                    handle_client_message(&text, &username_recv, &db_recv, &hub_recv, &tx_recv).await;
+                    handle_client_message(&text, &username_recv, &db_recv, &hub_recv, &tx_recv, voice_enabled).await;
                 }
                 Message::Close(_) => break,
                 _ => {}
@@ -99,6 +100,7 @@ async fn handle_client_message(
     db: &Db,
     hub: &Hub,
     tx: &mpsc::UnboundedSender<String>,
+    voice_enabled: bool,
 ) {
     let msg: ClientMessage = match serde_json::from_str(text) {
         Ok(m) => m,
@@ -162,6 +164,12 @@ async fn handle_client_message(
         }
 
         // ── Voice channel signaling ──────────────────────────────────────────
+
+        ClientMessage::VoiceJoin { .. }
+        | ClientMessage::VoiceLeave { .. }
+        | ClientMessage::VoiceOffer { .. }
+        | ClientMessage::VoiceAnswer { .. }
+        | ClientMessage::VoiceIce { .. } if !voice_enabled => {}
 
         ClientMessage::VoiceJoin { channel_id } => {
             let users = hub.voice_join(&channel_id, username).await;

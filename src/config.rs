@@ -103,6 +103,9 @@ pub struct SecurityConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoiceConfig {
+    /// Enable or disable voice channels on this server.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
     /// Quality preset: "low" (32 kbps), "medium" (64 kbps), "high" (96 kbps), "ultra" (128 kbps)
     #[serde(default = "default_voice_quality")]
     pub quality: String,
@@ -138,6 +141,7 @@ impl VoiceConfig {
 impl Default for VoiceConfig {
     fn default() -> Self {
         Self {
+            enabled: true,
             quality: default_voice_quality(),
             max_bitrate_bps: None,
             noise_suppression: true,
@@ -273,6 +277,9 @@ require_approval = false
 allowed_origins = []
 
 [voice]
+# Set to false to completely disable voice channels on this server.
+# When false: the feature is hidden from clients and all voice WebSocket messages are rejected.
+enabled = true
 # Audio quality preset: "low" (32 kbps), "medium" (64 kbps), "high" (96 kbps), "ultra" (128 kbps)
 # "medium" matches Discord's default channel quality.
 quality = "medium"
