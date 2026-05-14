@@ -36,6 +36,6 @@ COPY ./docker/config.toml $CONFIG_PATH/config.toml
 
 EXPOSE 8080
 
-ENTRYPOINT [$APP]
+ENTRYPOINT ["$APP"]
 
 CMD ["--config", "$CONFIG_PATH/config.toml"]

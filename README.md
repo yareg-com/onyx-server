@@ -27,6 +27,11 @@ cargo build --release
 
 A default configuration will be generated on first run.
 
+## Docker build
+```bash
+docker build -t onyx-server -f docker/Dockerfile .
+```
+
 ## Client
 
 The desktop/mobile client is available at: https://github.com/wardcore-dev/onyx
