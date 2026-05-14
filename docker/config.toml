@@ -9,7 +9,7 @@ max_message_length = 4096
 motd = ""
 
 [database]
-path = "/var/lib/onyx-server/onyx-server.db"
+path = "/var/lib/onyx/default.db"
 
 [media]
 provider = "local"
@@ -17,7 +17,7 @@ max_file_size_mb = 50
 allowed_types = ["image", "video", "audio", "file"]
 
 [media.local]
-storage_path = "/var/lib/onyx-server/media"
+storage_path = "/var/lib/onyx/media"
 
 [media.custom]
 upload_url = ""

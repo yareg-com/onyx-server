@@ -17,7 +17,7 @@ RUN touch src/main.rs && cargo build --release
 
 FROM alpine:3.23.4
 
-ENV APP=onyx-server
+ENV APP=onyx
 ENV CONFIG_PATH=/home/$APP/.$APP
 ENV DATA_PATH=/var/lib/$APP
 
@@ -28,14 +28,12 @@ RUN apk --no-cache add curl && \
 WORKDIR /home/$APP
 USER $APP
 
-RUN mkdir -p $CONFIG_PATH
+#RUN mkdir -p $CONFIG_PATH
 
-COPY --from=builder /usr/src/$APP/target/release/$APP /usr/local/bin/$APP
+COPY --from=builder /usr/src/onyx-server/target/release/onyx-server /usr/local/bin/$APP
 
-COPY ./docker/config.toml $CONFIG_PATH/config.toml
+COPY ./docker/config.toml config.toml
 
 EXPOSE 8080
 
-ENTRYPOINT ["$APP"]
-
-CMD ["--config", "$CONFIG_PATH/config.toml"]
+ENTRYPOINT ["sh", "-c", "exec $APP serve"]
