@@ -1,0 +1,52 @@
+[server]
+name = "My ONYX Server"
+description = "A self-hosted group server"
+bind_address = "0.0.0.0"
+port = 8080
+max_members_per_group = 500
+max_groups = 0
+max_message_length = 4096
+motd = ""
+
+[database]
+path = "/var/lib/onyx-server/onyx-server.db"
+
+[media]
+provider = "local"
+max_file_size_mb = 50
+allowed_types = ["image", "video", "audio", "file"]
+
+[media.local]
+storage_path = "/var/lib/onyx-server/media"
+
+[media.custom]
+upload_url = ""
+upload_field_name = "file"
+response_url_jsonpath = "$.url"
+
+[moderation]
+enable_moderators = true
+default_role = "member"
+
+[security]
+max_messages_per_minute = 30
+max_joins_per_minute = 10
+require_approval = false
+# Restrict CORS to specific origins, e.g. ["https://app.example.com"]
+# Leave empty to allow any origin (suitable for LAN/desktop-app deployments)
+allowed_origins = []
+
+[voice]
+# Set to false to completely disable voice channels on this server.
+# When false: the feature is hidden from clients and all voice WebSocket messages are rejected.
+enabled = true
+# Audio quality preset: "low" (32 kbps), "medium" (64 kbps), "high" (96 kbps), "ultra" (128 kbps)
+# "medium" matches Discord's default channel quality.
+quality = "medium"
+# Uncomment to set an exact bitrate in bits/s (overrides quality preset):
+# max_bitrate_bps = 64000
+noise_suppression = true
+echo_cancellation = true
+auto_gain_control = true
+# Enable stereo (doubles bandwidth; useful for music bots)
+stereo = false
