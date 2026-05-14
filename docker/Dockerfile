@@ -21,7 +21,7 @@ ENV APP=onyx
 ENV CONFIG_PATH=/home/$APP/.$APP
 ENV DATA_PATH=/var/lib/$APP
 
-RUN apk --no-cache add curl && \
+RUN apk --no-cache add curl tini && \
     adduser --disabled-password --gecos '' $APP && \
     mkdir -p $DATA_PATH && chown -R $APP $DATA_PATH
 
@@ -36,4 +36,4 @@ COPY ./docker/config.toml config.toml
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "exec $APP serve"]
+ENTRYPOINT ["/sbin/tini", "--", "sh", "-c", "exec $APP serve"]
