@@ -19,6 +19,13 @@ Requires [Rust](https://rustup.rs/) toolchain.
 cargo build --release
 ```
 
+## Building docker image
+```bash
+docker build -t onyx-server -f docker/Dockerfile .
+```
+
+A default configuration is in docker/config.toml.
+
 ## Running
 
 ```bash
@@ -26,11 +33,6 @@ cargo build --release
 ```
 
 A default configuration will be generated on first run.
-
-## Docker build
-```bash
-docker build -t onyx-server -f docker/Dockerfile .
-```
 
 ## Client
 
