@@ -101,24 +101,24 @@ async fn print_available_addresses(port: u16) {
     }
 
     // Fetch public IP from external service (useful for VPS)
-    match reqwest::Client::new()
-        .get("https://api.ipify.org")
-        .timeout(std::time::Duration::from_secs(3))
-        .send()
-        .await
-    {
-        Ok(resp) => {
-            if let Ok(public_ip) = resp.text().await {
-                let public_ip = public_ip.trim();
-                if !public_ip.is_empty() {
-                    println!("  {:<10}  {}:{}", "Public", public_ip, port);
-                }
-            }
-        }
-        Err(_) => {
-            println!("  Public:     (could not detect — no internet?)");
-        }
-    }
+    // match reqwest::Client::new()
+    //     .get("https://api.ipify.org")
+    //     .timeout(std::time::Duration::from_secs(3))
+    //     .send()
+    //     .await
+    // {
+    //     Ok(resp) => {
+    //         if let Ok(public_ip) = resp.text().await {
+    //             let public_ip = public_ip.trim();
+    //             if !public_ip.is_empty() {
+    //                 println!("  {:<10}  {}:{}", "Public", public_ip, port);
+    //             }
+    //         }
+    //     }
+    //     Err(_) => {
+    //         println!("  Public:     (could not detect — no internet?)");
+    //     }
+    // }
 
     println!("  ─────────────────────────────────");
     println!();
