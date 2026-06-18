@@ -11,14 +11,14 @@ pub fn print_header(text: &str) {
     let mid = format!("║ {:^76} ║", text);
     let bot = "╚══════════════════════════════════════════════════════════════════════════╝";
     println!("\n{}                    {}", top.bright_cyan(), "© 2026 WARDCORE ".bright_black());
-    println!("{}                    {}", mid.bright_cyan(), "beta 0.6".bright_black());
+    println!("{}                    {}", mid.bright_cyan(), "v0.7-beta".bright_black());
     println!("{}", bot.bright_cyan());
     println!();
 }
 
 pub fn print_footer() {
     println!("\n{}", format!("{:>78}", "© 2026 WARDCORE").bright_black());
-    println!("{}", format!("{:>78}", "beta 0.6").bright_black());
+    println!("{}", format!("{:>78}", "v0.7-beta").bright_black());
     println!();
 }
 
@@ -68,9 +68,20 @@ pub fn wait_for_enter() {
     io::stdin().read_line(&mut _input).unwrap();
 }
 
-pub async fn show_main_menu() -> usize {
+pub async fn show_main_menu(update_tag: Option<&str>) -> usize {
     clear_screen();
     print_header("ONYX SERVER - MAIN MENU");
+
+    if let Some(tag) = update_tag {
+        println!(
+            "{}",
+            format!("  ★  NEW VERSION AVAILABLE: {}  —  select option 5 to check  ★", tag)
+                .black()
+                .on_yellow()
+                .bold()
+        );
+        println!();
+    }
 
     println!("{}", "What would you like to do?".bright_white().bold());
     println!();
@@ -79,10 +90,11 @@ pub async fn show_main_menu() -> usize {
     print_option(2, "View all servers");
     print_option(3, "Manage server");
     print_option(4, "Quick start guide");
-    print_option(5, "Exit");
+    print_option(5, "Check for updates");
+    print_option(6, "Exit");
 
     println!();
-    get_choice(5)
+    get_choice(6)
 }
 
 pub async fn show_manage_menu() -> usize {
