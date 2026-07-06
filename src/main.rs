@@ -13,6 +13,7 @@ mod models;
 mod moderation;
 mod pm;
 mod server;
+mod updater;
 mod ws;
 mod menu;
 
@@ -64,9 +65,19 @@ async fn main() {
         return;
     }
 
+    // Check for updates at startup (3 second timeout, silent fail)
+    let update = tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        updater::check(),
+    )
+    .await
+    .ok()
+    .flatten();
+
     // Interactive menu mode
     loop {
-        let choice = show_main_menu().await;
+        let update_tag = update.as_ref().map(|u| u.tag.as_str());
+        let choice = show_main_menu(update_tag).await;
 
         match choice {
             1 => interactive_create_server().await,
@@ -74,6 +85,14 @@ async fn main() {
             3 => interactive_manage_server().await,
             4 => interactive_guide().await,
             5 => {
+                if interactive_check_updates().await {
+                    clear_screen();
+                    println!("\n{}", "Thank you for using ONYX Server!".bright_cyan().bold());
+                    print_footer();
+                    break;
+                }
+            }
+            6 => {
                 clear_screen();
                 println!("\n{}", "Thank you for using ONYX Server!".bright_cyan().bold());
                 print_footer();
@@ -607,7 +626,7 @@ fn open_db_or_exit(path: &str) -> db::Db {
 
 fn print_footer() {
     println!("\n{:>78}", "© 2026 WARDCORE");
-    println!("{:>78}", "beta 0.6");
+    println!("{:>78}", "v0.7-beta");
     println!();
 }
 
@@ -2150,6 +2169,52 @@ async fn interactive_member_menu(config_path: &str) {
             _ => {}
         }
     }
+}
+
+async fn interactive_check_updates() -> bool {
+    clear_screen();
+    print_header("CHECK FOR UPDATES");
+
+    println!(
+        "{} {}",
+        "Current version:".bright_black(),
+        updater::CURRENT_VERSION.white().bold()
+    );
+    println!();
+    print_info("Checking for updates...");
+
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        updater::check(),
+    )
+    .await;
+
+    println!();
+
+    match result {
+        Err(_) => {
+            print_error("Connection timeout. Could not reach GitHub.");
+        }
+        Ok(None) => {
+            print_success(&format!("You are up to date! ({})", updater::CURRENT_VERSION));
+        }
+        Ok(Some(info)) => {
+            print_success(&format!(
+                "New version available: {}",
+                info.tag.bright_green().bold()
+            ));
+            println!();
+            println!(
+                "  {} {}",
+                "Download:".bright_black(),
+                info.page_url.cyan().underline()
+            );
+        }
+    }
+
+    print_footer();
+    wait_for_enter();
+    false
 }
 
 async fn interactive_guide() {
